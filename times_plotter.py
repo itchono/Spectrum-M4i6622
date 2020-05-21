@@ -16,7 +16,7 @@ with open("times.dat", "rb") as f:
     plt.xlabel("Trial number")
 
     for fn in times:
-        plt.scatter(x,times[fn], label=fn)
+        plt.plot(x,times[fn], label=fn)
 
         print("Mean time for {}: {} ns".format(fn, sum(times[fn])/len(times[fn])))
 

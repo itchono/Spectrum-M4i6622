@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     times = {f.__name__:[] for f in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat, columnPreStack, numbaAccelerate, numbaFlatCat]}
 
-    for i in range(20):
+    for i in range(50):
 
         for fnc in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat, columnPreStack]:
             t_start = time.perf_counter_ns()
