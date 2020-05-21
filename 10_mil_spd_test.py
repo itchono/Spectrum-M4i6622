@@ -1,7 +1,8 @@
 import numpy as np
 from numba import jit
 import time
-import matplot
+import matplotlib.pyplot as plt
+import pickle
 
 def calculateMatrix(function0, function1, function2, function3):
     # uses matrix multiplcation to map the functions from a form like [1, 2, 3, 4]
@@ -81,6 +82,22 @@ def matrixFlatDat(function0, function1, function2, function3):
 
     return big.flatten()
     # around 0.5 seconds
+
+def columnPreStack(function0, function1, function2, function3):
+    # directly stacks vectors by pre-evaluating them in a vector, selecting columns
+    ELEMENT_SIZE = 10000000
+    QUARTER_SIZE = int(ELEMENT_SIZE/4)
+
+    values = np.arange(0,QUARTER_SIZE, 1) # creates array of 2.5 million elements
+
+    big = np.zeros(ELEMENT_SIZE)
+    big[0::4] = function0(values)
+    big[1::4] = function1(values)
+    big[2::4] = function2(values)
+    big[3::4] = function3(values)
+
+    return big
+
 
 def baseline(function0, function1, function2, function3):
 
@@ -181,22 +198,44 @@ def f3t(x):
 
 if __name__ == "__main__":
 
-    times = {f.__name__:[] for f in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat, numbaAccelerate, numbaFlatCat]}
+    times = {f.__name__:[] for f in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat, columnPreStack, numbaAccelerate, numbaFlatCat]}
 
-    for fnc in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat]:
-        print("Function name: {}".format(fnc.__name__))
-        t_start = time.perf_counter_ns()
+    for i in range(20):
 
-        m = fnc(f0, f1, f2, f3)
+        for fnc in [calculateMatrix, matrixFlatCat, matrixFlatCatVariant, matrixFlatDat, columnPreStack]:
+            t_start = time.perf_counter_ns()
+            m = fnc(f0, f1, f2, f3)
+            t_end = time.perf_counter_ns()-t_start
+        
+            times[fnc.__name__].append(t_end)
 
-        t_end = time.perf_counter_ns()-t_start
+        for fnc in [numbaAccelerate, numbaFlatCat]:
+            t_start = time.perf_counter_ns()
+            m = fnc()
+            t_end = time.perf_counter_ns()-t_start
+            
+            times[fnc.__name__].append(t_end)
 
-        print("Time taken: {} ns".format(t_end))
+    print(times)
 
-    for fnc in [numbaAccelerate, numbaFlatCat]:
-        print("Function name: {}".format(fnc.__name__))
-        t_start = time.perf_counter_ns()
+    with open("times.dat", "wb") as f:
+        pickle.dump(times, f)
 
-        m = fnc()
+    # plot
 
-        print("Time taken: {} ns".format(time.perf_counter_ns()-t_start))
+    # Prepare the data
+    x = np.array(range(len(times["matrixFlatCat"])))
+
+    plt.yscale("log")
+    plt.title("Time taken to produce 10 million element buffer")
+    plt.ylabel("Time taken (ns) [log scale]")
+    plt.xlabel("Trial number")
+
+    for fn in times:
+        plt.plot(x,times[fn], label=fn)
+
+    # Add a legend
+    plt.legend()
+
+    # Show the plot
+    plt.show()
